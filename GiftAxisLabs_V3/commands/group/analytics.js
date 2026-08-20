@@ -4,7 +4,6 @@ const path = require("path");
 const ADB = path.join(__dirname, "../../data/analytics.json");
 async function getA() { await fs.ensureFile(ADB); return fs.readJson(ADB).catch(() => ({})); }
 async function saveA(db) { await fs.writeJson(ADB, db); }
-// Track message counts (called from index.js — we expose trackMsg)
 async function trackMsg(groupId, userId, name) {
     const db = await getA();
     if (!db[groupId]) db[groupId] = { total: 0, members: {} };

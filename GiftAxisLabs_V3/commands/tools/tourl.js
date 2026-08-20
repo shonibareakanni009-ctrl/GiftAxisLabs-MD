@@ -8,7 +8,6 @@ module.exports = {
     alias: ["upload", "url"],
     desc: "Converts a replied image/video into a permanent link.",
     async execute(sock, m, args, reply) {
-        // Check if replying to a message with media
         const quoted = m.message?.extendedTextMessage?.contextInfo?.quotedMessage;
         if (!quoted) {
             return reply("📎 *Reply to an image or video* with .tourl to get a link.");
@@ -22,7 +21,6 @@ module.exports = {
         reply(config.msg.wait);
 
         try {
-            // Download the media
             const buffer = await downloadMediaMessage(
                 { message: quoted, key: m.key },
                 "buffer",
@@ -33,11 +31,9 @@ module.exports = {
                 return reply("❌ Failed to download media.");
             }
 
-            // Upload to file hosting (using telegra.ph for images, catbox for others)
             let url;
 
             if (mediaType === "imageMessage") {
-                // Upload to telegra.ph
                 const form = new FormData();
                 form.append("file", buffer, { filename: "image.jpg", contentType: "image/jpeg" });
 
@@ -51,7 +47,6 @@ module.exports = {
             }
 
             if (!url) {
-                // Fallback: upload to catbox.moe
                 const form = new FormData();
                 form.append("reqtype", "fileupload");
                 form.append("fileToUpload", buffer, {

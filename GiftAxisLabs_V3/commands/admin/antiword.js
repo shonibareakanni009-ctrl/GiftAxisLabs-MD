@@ -32,7 +32,6 @@ module.exports = {
             database.removeBannedWord(from, word);
             return reply(`┌ ❏ ◆ ⌜✅ 𝗪𝗢𝗥𝗗 𝗥𝗘𝗠𝗢𝗩𝗘𝗗⌟ ◆\n│\n├◆ "${word}" ʀᴇᴍᴏᴠᴇᴅ ғʀᴏᴍ ʙᴀɴ ʟɪsᴛ\n│\n└ ❏`);
         }
-        // Default: treat first arg as word to add
         database.addBannedWord(from, sub);
         reply(`┌ ❏ ◆ ⌜✅ 𝗪𝗢𝗥𝗗 𝗕𝗔𝗡𝗡𝗘𝗗⌟ ◆\n│\n├◆ "${sub}" ᴀᴅᴅᴇᴅ ᴛᴏ ʙᴀɴ ʟɪsᴛ\n│\n└ ❏`);
     }

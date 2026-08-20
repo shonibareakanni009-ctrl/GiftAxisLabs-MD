@@ -1,9 +1,4 @@
-/**
- * ─────────────────────────────────────────────────────────────────────────────
- * GIFT AXIS LABS — Learning Group Database
- * Handles all persistent data for the Learning Group System
- * ─────────────────────────────────────────────────────────────────────────────
- */
+
 
 const fs = require("fs");
 const path = require("path");
@@ -11,7 +6,6 @@ const path = require("path");
 const DB_DIR  = path.join(__dirname, "..", "data");
 const LDB_FILE = path.join(DB_DIR, "learning.json");
 
-// ─── DEFAULT SCHEMA ───────────────────────────────────────────────────────────
 const defaultLDB = {
     learningGroups: {},   // groupId → { name, topic, language, registeredAt, registeredBy, sensitivity, aiMode, active }
     students:       {},   // groupId → { userId → { name, role, xp, warnings, mutedUntil, streak, lastSeen } }
@@ -26,7 +20,6 @@ const defaultLDB = {
 
 if (!fs.existsSync(DB_DIR)) fs.mkdirSync(DB_DIR, { recursive: true });
 
-// ─── LOAD / SAVE ──────────────────────────────────────────────────────────────
 function loadLDB() {
     try {
         if (fs.existsSync(LDB_FILE)) {
@@ -44,7 +37,6 @@ function saveLDB() {
 
 let ldb = loadLDB();
 
-// ─── LEARNING GROUP ───────────────────────────────────────────────────────────
 function registerLearningGroup(groupId, name, registeredBy, options = {}) {
     ldb.learningGroups[groupId] = {
         name,
@@ -85,8 +77,6 @@ function getAllLearningGroups() {
     return Object.entries(ldb.learningGroups).filter(([, g]) => g.active);
 }
 
-// ─── STUDENTS / ROLES ─────────────────────────────────────────────────────────
-// Roles: owner | teacher | prefect | student | guest
 function registerStudent(groupId, userId, name, role = "student") {
     if (!ldb.students[groupId]) ldb.students[groupId] = {};
     if (!ldb.students[groupId][userId]) {
@@ -135,7 +125,6 @@ function getLeaderboard(groupId, limit = 10) {
         .map(([id, s]) => ({ id, ...s }));
 }
 
-// ─── WARNINGS & PUNISHMENTS ───────────────────────────────────────────────────
 function addWarning(groupId, userId, reason, by) {
     if (!ldb.students[groupId]?.[userId]) return 0;
     ldb.students[groupId][userId].warnings = (ldb.students[groupId][userId].warnings || 0) + 1;
@@ -190,7 +179,6 @@ function logAIAction(groupId, userId, message, verdict, action) {
     saveLDB();
 }
 
-// ─── ATTENDANCE ───────────────────────────────────────────────────────────────
 function openAttendance(groupId, openedBy) {
     if (!ldb.attendance[groupId]) ldb.attendance[groupId] = { sessions: [] };
     const session = {
@@ -230,7 +218,6 @@ function closeAttendance(groupId, allParticipants = []) {
     const session  = sessions.find(s => s.id === grp.activeSession);
     if (!session) return null;
     session.closedAt = Date.now();
-    // Mark absent: anyone in allParticipants not in present
     const presentIds = session.present.map(p => p.userId);
     session.absent = allParticipants
         .filter(p => !presentIds.includes(p.id))
@@ -252,9 +239,7 @@ function getStudentAttendanceRate(groupId, userId) {
     return Math.round((attended / sessions.length) * 100);
 }
 
-// ─── QUIZ ─────────────────────────────────────────────────────────────────────
 function startQuiz(groupId, quiz) {
-    // quiz: { id, title, questions: [{q, options, answer, points}], createdBy, timePerQ }
     if (!ldb.quizzes[groupId]) ldb.quizzes[groupId] = { active: null, history: [] };
     quiz.startedAt      = Date.now();
     quiz.currentQ       = 0;
@@ -302,9 +287,7 @@ function endQuiz(groupId) {
     return quiz;
 }
 
-// ─── ASSIGNMENTS ──────────────────────────────────────────────────────────────
 function createAssignment(groupId, assignment) {
-    // assignment: { title, description, deadline (ms), createdBy }
     if (!ldb.assignments[groupId]) ldb.assignments[groupId] = { list: [] };
     const a = { ...assignment, id: Date.now().toString(), submissions: {}, createdAt: Date.now() };
     ldb.assignments[groupId].list.push(a);
@@ -341,9 +324,7 @@ function getAssignmentById(groupId, assignmentId) {
     return (ldb.assignments[groupId]?.list || []).find(x => x.id === assignmentId) || null;
 }
 
-// ─── SCHEDULE ─────────────────────────────────────────────────────────────────
 function addSchedule(groupId, entry) {
-    // entry: { day, time, title, description }
     if (!ldb.schedules[groupId]) ldb.schedules[groupId] = { timetable: [], reminders: [] };
     entry.id = Date.now().toString();
     ldb.schedules[groupId].timetable.push(entry);
@@ -361,7 +342,6 @@ function getSchedule(groupId) {
     return ldb.schedules[groupId]?.timetable || [];
 }
 
-// ─── LABS ─────────────────────────────────────────────────────────────────────
 function setActiveLab(userId, lab) {
     if (!ldb.labs[userId]) ldb.labs[userId] = { activeLab: null, completed: [], xp: 0 };
     ldb.labs[userId].activeLab = { ...lab, startedAt: Date.now(), attempts: 0 };
@@ -395,7 +375,6 @@ function getLabStats(userId) {
     };
 }
 
-// ─── STATS FOR REPORTS ────────────────────────────────────────────────────────
 function getGroupStats(groupId) {
     const students    = ldb.students[groupId]    || {};
     const sessions    = ldb.attendance[groupId]?.sessions || [];
@@ -426,22 +405,13 @@ function getGroupStats(groupId) {
 
 module.exports = {
     ldb, saveLDB,
-    // Learning Groups
     registerLearningGroup, isLearningGroup, getLearningGroup, updateGroupSetting, getAllLearningGroups,
-    // Students
     registerStudent, getStudent, getAllStudents, setRole, addXP, getLeaderboard,
-    // Punishments
     addWarning, resetWarnings, muteStudent, isStudentMuted, logPunishment, getPunishmentLog, logAIAction,
-    // Attendance
     openAttendance, markPresent, closeAttendance, getAttendanceHistory, getStudentAttendanceRate,
-    // Quiz
     startQuiz, getActiveQuiz, recordAnswer, advanceQuiz, endQuiz,
-    // Assignments
     createAssignment, submitAssignment, gradeAssignment, getAssignments, getAssignmentById,
-    // Schedule
     addSchedule, removeSchedule, getSchedule,
-    // Labs
     setActiveLab, getActiveLab, completeLab, incrementLabAttempts, getLabStats,
-    // Stats
     getGroupStats,
 };

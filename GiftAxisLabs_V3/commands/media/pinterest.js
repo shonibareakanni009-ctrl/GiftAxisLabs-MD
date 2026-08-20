@@ -8,7 +8,6 @@ module.exports = {
         try {
             reply(`🔍 Searching Pinterest for: *${query}*...`);
             const res = await axios.get(`https://api.pinterest.com/v3/pidgets/boards_feed/?board_id=`, { timeout: 10000 }).catch(() => null);
-            // Use Unsplash as fallback for image search (free, reliable)
             const imgRes = await axios.get(`https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&per_page=1&client_id=${process.env.UNSPLASH_KEY || ""}`, { timeout: 8000 }).catch(() => null);
             const imgUrl = imgRes?.data?.results?.[0]?.urls?.regular;
             if (!imgUrl) {

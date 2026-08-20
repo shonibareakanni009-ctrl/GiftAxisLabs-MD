@@ -12,17 +12,13 @@ module.exports = {
         const from = m.key.remoteJid;
         const text = args.join(" ");
 
-        // Simulate typing
         await sock.sendPresenceUpdate("composing", from);
 
-        // Wait based on message length (50ms per char, min 1s, max 5s)
         const delay = Math.min(Math.max(text.length * 50, 1000), 5000);
         await new Promise(r => setTimeout(r, delay));
 
-        // Stop typing
         await sock.sendPresenceUpdate("paused", from);
 
-        // Send stylized box
         const boxText =
             `┌ ❏ ◆ ⌜${config.botName}⌟ ◆\n` +
             `│\n` +

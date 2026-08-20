@@ -17,7 +17,6 @@ module.exports = {
         const invoiceNo = `INV-${Date.now().toString().slice(-6)}`;
         const date = new Date().toLocaleDateString("en-NG", { year:"numeric", month:"long", day:"numeric" });
         const rows = items.map(i => `├◆ ${i.name.padEnd(20)} ₦${i.price.toLocaleString()}`).join("\n");
-        // Serve as downloadable HTML invoice page
         try {
             const invoiceData = {
                 invoiceNo, date, client, from: "Gift Axis Labs™",

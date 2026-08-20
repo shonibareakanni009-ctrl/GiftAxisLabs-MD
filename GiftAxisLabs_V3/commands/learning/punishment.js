@@ -1,8 +1,4 @@
-/**
- * commands/learning/punishment.js
- * Admin commands for managing discipline.
- * The AI auto-moderation runs from index.js via geminiAgent.
- */
+
 
 const ldb    = require("../../lib/learningDB");
 const config = require("../../config");
@@ -17,7 +13,6 @@ const MUTE_DURATIONS = {
 
 module.exports = [
 
-    // ── .warn ─────────────────────────────────────────────────────────────────
     {
         name:        "warn",
         aliases:     ["warning", "addwarn"],
@@ -42,7 +37,6 @@ module.exports = [
 
                 let action = "";
                 if (warns >= 3) {
-                    // Kick on 3 warns
                     try {
                         await sock.groupParticipantsUpdate(from, [userId], "remove");
                         action = "\n├◆ 🚫 *AUTO-KICKED* (3 warnings reached)";
@@ -66,7 +60,6 @@ module.exports = [
         }
     },
 
-    // ── .clearwarn ────────────────────────────────────────────────────────────
     {
         name:        "clearwarn",
         aliases:     ["unwarn", "resetwarn"],
@@ -90,7 +83,6 @@ module.exports = [
         }
     },
 
-    // ── .classmute ────────────────────────────────────────────────────────────
     {
         name:        "classmute",
         aliases:     ["learnmute", "studymute"],
@@ -116,7 +108,6 @@ module.exports = [
                 const until = ldb.muteStudent(from, userId, duration, reason, sender);
                 const name  = userId.split("@")[0];
 
-                // Also mute via WhatsApp group (admin only action)
                 try {
                     await sock.groupParticipantsUpdate(from, [userId], "demote").catch(() => {});
                 } catch (_) {}
@@ -134,7 +125,6 @@ module.exports = [
         }
     },
 
-    // ── .classunmute ──────────────────────────────────────────────────────────
     {
         name:        "classunmute",
         aliases:     ["learnunmute", "unmutestudent"],
@@ -161,7 +151,6 @@ module.exports = [
         }
     },
 
-    // ── .punishlog ────────────────────────────────────────────────────────────
     {
         name:        "punishlog",
         aliases:     ["disciplinelog", "warnlog"],
@@ -185,7 +174,6 @@ module.exports = [
         }
     },
 
-    // ── .aimode ───────────────────────────────────────────────────────────────
     {
         name:        "aimode",
         aliases:     ["setaimode", "agentmode"],

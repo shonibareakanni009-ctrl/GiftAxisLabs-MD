@@ -1,7 +1,4 @@
-/**
- * commands/learning/schedule.js
- * Class timetable, study reminders, and AI-generated weekly reports.
- */
+
 
 const gemini = require("../../lib/geminiAgent");
 const ldb    = require("../../lib/learningDB");
@@ -11,7 +8,6 @@ const DAYS = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Satur
 
 module.exports = [
 
-    // ── .schedule ─────────────────────────────────────────────────────────────
     {
         name:        "schedule",
         aliases:     ["addschedule", "addclass"],
@@ -37,10 +33,8 @@ module.exports = [
 
             const entry = ldb.addSchedule(from, { day, time, title });
 
-            // Schedule reminder if today matches
             const todayName = DAYS[new Date().getDay()];
             if (day.toLowerCase() === todayName.toLowerCase()) {
-                // Simple reminder: parse time and set timeout
                 try {
                     const [hourMin, ampm] = time.match(/(\d+(?::\d+)?)(am|pm)?/i)?.slice(1) || [];
                     if (hourMin) {
@@ -71,7 +65,6 @@ module.exports = [
         }
     },
 
-    // ── .timetable ────────────────────────────────────────────────────────────
     {
         name:        "timetable",
         aliases:     ["schedule", "classtable", "tt"],
@@ -85,7 +78,6 @@ module.exports = [
             const entries = ldb.getSchedule(from);
             if (!entries.length) return reply("No schedule set yet. Admin: use .schedule to add classes.");
 
-            // Group by day
             const byDay = {};
             for (const e of entries) {
                 const d = e.day || "Unscheduled";
@@ -111,7 +103,6 @@ module.exports = [
         }
     },
 
-    // ── .removeschedule ───────────────────────────────────────────────────────
     {
         name:        "removeschedule",
         aliases:     ["delschedule", "rmschedule"],
@@ -129,7 +120,6 @@ module.exports = [
         }
     },
 
-    // ── .report ───────────────────────────────────────────────────────────────
     {
         name:        "report",
         aliases:     ["weeklyreport", "classreport"],
@@ -165,7 +155,6 @@ module.exports = [
         }
     },
 
-    // ── .remind ───────────────────────────────────────────────────────────────
     {
         name:        "studyreminder",
         aliases:     ["classremind", "sremind"],
@@ -195,7 +184,6 @@ module.exports = [
         }
     },
 
-    // ── .broadcast ────────────────────────────────────────────────────────────
     {
         name:        "broadcast",
         aliases:     ["announce", "classannounce"],

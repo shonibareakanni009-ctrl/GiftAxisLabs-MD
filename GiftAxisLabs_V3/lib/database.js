@@ -4,7 +4,6 @@ const path = require("path");
 const DB_DIR = path.join(__dirname, "..", "data");
 const DB_FILE = path.join(DB_DIR, "database.json");
 
-// Default structure
 const defaultDB = {
     users: {},       // userId -> { name, firstSeen, lastSeen, banned, ... }
     economy: {},     // userId -> { wallet, bank, lastDaily, lastWork, ... }
@@ -26,17 +25,14 @@ const defaultDB = {
     allowedTgUsers: []  // Telegram chatIds allowed to use bot (empty = all allowed)
 };
 
-// Ensure data directory exists
 if (!fs.existsSync(DB_DIR)) {
     fs.mkdirSync(DB_DIR, { recursive: true });
 }
 
-// Load or create database
 function loadDB() {
     try {
         if (fs.existsSync(DB_FILE)) {
             const data = JSON.parse(fs.readFileSync(DB_FILE, "utf-8"));
-            // Merge with defaults for any missing keys
             return {
                 ...defaultDB,
                 ...data,
@@ -51,7 +47,6 @@ function loadDB() {
     return { ...defaultDB };
 }
 
-// Save database
 function saveDB(db) {
     try {
         fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2));
@@ -60,10 +55,8 @@ function saveDB(db) {
     }
 }
 
-// Get database instance
 let db = loadDB();
 
-// Reset daily stats if new day
 function checkDailyReset() {
     const today = new Date().toDateString();
     if (db.stats.todayDate !== today) {
@@ -73,7 +66,6 @@ function checkDailyReset() {
     }
 }
 
-// Track user
 function trackUser(userId, name) {
     checkDailyReset();
     if (!db.users[userId]) {
@@ -94,7 +86,6 @@ function trackUser(userId, name) {
     saveDB(db);
 }
 
-// Track command usage
 function trackCommand(userId) {
     checkDailyReset();
     if (db.users[userId]) {
@@ -105,21 +96,18 @@ function trackCommand(userId) {
     saveDB(db);
 }
 
-// Add audit log
 function addLog(action, details) {
     db.logs.push({
         timestamp: Date.now(),
         action,
         details
     });
-    // Keep only last 500 logs
     if (db.logs.length > 500) {
         db.logs = db.logs.slice(-500);
     }
     saveDB(db);
 }
 
-// Session management
 function addSession(sessionId, phone) {
     db.sessions[sessionId] = {
         phone,
@@ -142,7 +130,6 @@ function getActiveSessions() {
     return Object.entries(db.sessions).filter(([_, s]) => s.active);
 }
 
-// Ban management
 function banUser(userId) {
     if (!db.banned.includes(userId)) {
         db.banned.push(userId);
@@ -161,7 +148,6 @@ function isUserBanned(userId) {
     return db.banned.includes(userId);
 }
 
-// Admin management
 function addAdmin(chatId) {
     if (!db.admins.includes(chatId)) {
         db.admins.push(chatId);
@@ -180,21 +166,18 @@ function isAdmin(chatId) {
     return db.admins.includes(chatId);
 }
 
-// Maintenance mode
 function setMaintenance(enabled) {
     db.maintenance = enabled;
     addLog("MAINTENANCE", { enabled });
     saveDB(db);
 }
 
-// Sleep mode
 function setSleep(enabled) {
     db.botSleeping = enabled;
     addLog("SLEEP_MODE", { enabled });
     saveDB(db);
 }
 
-// Reminder management
 function addReminder(userId, chatId, message, triggerAt) {
     db.reminders.push({ userId, chatId, message, triggerAt });
     saveDB(db);
@@ -208,7 +191,6 @@ function getDueReminders() {
     return due;
 }
 
-// ─── GROUP SETTINGS ───────────────────────────────────────────────────────────
 function getGroupSettings(groupId) {
     if (!db.groupSettings[groupId]) {
         db.groupSettings[groupId] = {
@@ -307,7 +289,6 @@ function resetSpam(groupId, userId) {
     }
 }
 
-// ─── PENDING REPORTS (for admin reply feature) ───────────────────────────────
 const pendingReports = new Map(); // reportId -> { fromChatId, fromName, message, timestamp }
 
 function storePendingReport(reportId, fromChatId, fromName, message) {
@@ -322,7 +303,6 @@ function deletePendingReport(reportId) {
     pendingReports.delete(reportId.toString());
 }
 
-// ─── MULTI-USER TELEGRAM ACCESS ───────────────────────────────────────────────
 function addAllowedTgUser(chatId) {
     const id = chatId.toString();
     if (!db.allowedTgUsers) db.allowedTgUsers = [];
@@ -369,7 +349,6 @@ module.exports = {
     setSleep,
     addReminder,
     getDueReminders,
-    // Group settings
     getGroupSettings,
     setGroupSetting,
     muteMember,
@@ -381,12 +360,10 @@ module.exports = {
     getBannedWords,
     trackSpam,
     resetSpam,
-    // Multi-user Telegram
     addAllowedTgUser,
     removeAllowedTgUser,
     isTgUserAllowed,
     getAllowedTgUsers,
-    // Pending reports
     storePendingReport,
     getPendingReport,
     deletePendingReport

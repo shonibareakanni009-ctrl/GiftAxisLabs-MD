@@ -1,14 +1,9 @@
-/**
- * commands/learning/quiz.js
- * AI-powered quiz engine. Gemini generates questions,
- * bot delivers to group, tracks answers in real-time.
- */
+
 
 const gemini = require("../../lib/geminiAgent");
 const ldb    = require("../../lib/learningDB");
 const config = require("../../config");
 
-// Active quiz timers per group
 const quizTimers = new Map();
 
 function clearQuizTimer(groupId) {
@@ -39,7 +34,6 @@ async function sendQuestion(sock, groupId, quiz, questionIndex) {
 
 module.exports = [
 
-    // ── .quiz ─────────────────────────────────────────────────────────────────
     {
         name:        "quiz",
         aliases:     ["startquiz", "genquiz"],
@@ -62,7 +56,6 @@ module.exports = [
                 );
             }
 
-            // Parse number from args
             let numQ    = 5;
             let topicArgs = [...args];
             const lastArg = parseInt(args[args.length - 1]);
@@ -92,11 +85,9 @@ module.exports = [
                         `├◆ Reply A, B, C, or D to answer\n└ ❏` + config.footer
                 }, { quoted: m });
 
-                // Send first question after 3 seconds
                 setTimeout(async () => {
                     await sendQuestion(sock, from, quiz, 0);
 
-                    // Auto-advance timer
                     const timer = setTimeout(async () => {
                         await advanceToNext(sock, from, quiz);
                     }, (quiz.timePerQuestion + 5) * 1000);
@@ -110,8 +101,6 @@ module.exports = [
         }
     },
 
-    // ── Message handler hook (called from index.js for A/B/C/D answers) ───────
-    // This is exported as a separate function to be called from the message event
     async function handleQuizAnswer(sock, from, sender, senderName, text) {
         const quiz = ldb.getActiveQuiz(from);
         if (!quiz) return false;
@@ -123,7 +112,6 @@ module.exports = [
         const q       = quiz.questions[qIndex];
         if (!q) return false;
 
-        // Check if already answered this question
         if (quiz.answered?.[qIndex]?.[sender] !== undefined) return true; // already answered
 
         const isCorrect = answer === q.answer;
@@ -143,7 +131,6 @@ module.exports = [
         return true;
     },
 
-    // ── .nextquestion ─────────────────────────────────────────────────────────
     {
         name:        "nextquestion",
         aliases:     ["nextq", "next"],
@@ -160,7 +147,6 @@ module.exports = [
         }
     },
 
-    // ── .endquiz ──────────────────────────────────────────────────────────────
     {
         name:        "endquiz",
         aliases:     ["stopquiz", "finishquiz"],
@@ -177,11 +163,9 @@ module.exports = [
     },
 ];
 
-// ── Internal helpers ──────────────────────────────────────────────────────────
 async function advanceToNext(sock, groupId, quiz) {
     clearQuizTimer(groupId);
 
-    // Show correct answer for current question
     const q = quiz.questions[quiz.currentQ];
     if (q) {
         await sock.sendMessage(groupId, {
@@ -194,7 +178,6 @@ async function advanceToNext(sock, groupId, quiz) {
     const nextQ = ldb.advanceQuiz(groupId);
 
     if (!nextQ) {
-        // Quiz ended
         const ended = ldb.endQuiz(groupId);
         await sendQuizResults(sock, groupId, ended);
         return;
@@ -202,7 +185,6 @@ async function advanceToNext(sock, groupId, quiz) {
 
     await sendQuestion(sock, groupId, ldb.getActiveQuiz(groupId), ldb.getActiveQuiz(groupId)?.currentQ || 0);
 
-    // Auto-advance timer for next question
     const timer = setTimeout(async () => {
         const current = ldb.getActiveQuiz(groupId);
         if (current) await advanceToNext(sock, groupId, current);
@@ -231,5 +213,4 @@ async function sendQuizResults(sock, groupId, quiz) {
     });
 }
 
-// Export the answer handler for use in index.js
 module.exports.handleQuizAnswer = module.exports[1];

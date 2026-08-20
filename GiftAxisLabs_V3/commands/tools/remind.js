@@ -22,7 +22,6 @@ module.exports = {
         const timeStr = args[0].toLowerCase();
         const message = args.slice(1).join(" ");
 
-        // Parse time
         const match = timeStr.match(/^(\d+)(s|m|h|d)$/);
         if (!match) {
             return reply("❌ Invalid time format. Use: 30s, 5m, 2h, or 1d");
@@ -40,7 +39,6 @@ module.exports = {
             case "d": ms = amount * 24 * 60 * 60 * 1000; unitName = "day(s)"; break;
         }
 
-        // Max 7 days
         if (ms > 7 * 24 * 60 * 60 * 1000) {
             return reply("❌ Maximum reminder time is 7 days.");
         }
@@ -49,7 +47,6 @@ module.exports = {
         const sender = m.key.participant || from;
         const triggerAt = Date.now() + ms;
 
-        // Store in database for persistence
         database.addReminder(sender, from, message, triggerAt);
 
         reply(

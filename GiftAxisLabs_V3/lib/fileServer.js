@@ -1,10 +1,4 @@
-/**
- * ─────────────────────────────────────────────────────────────────────────────
- * GIFT AXIS LABS — File Server Helper
- * Saves generated content (labs, docs, invoices, code) to public/generated/
- * Returns a public ngrok URL so WhatsApp users can open it in browser.
- * ─────────────────────────────────────────────────────────────────────────────
- */
+
 
 const fs    = require("fs-extra");
 const path  = require("path");
@@ -14,7 +8,6 @@ const ngrok = require("./ngrokManager");
 const GEN_DIR = path.join(__dirname, "../public/generated");
 fs.ensureDirSync(GEN_DIR);
 
-// Auto-delete generated files older than 24 hours
 setInterval(() => {
     try {
         const files = fs.readdirSync(GEN_DIR);
@@ -27,16 +20,8 @@ setInterval(() => {
     } catch(e) {}
 }, 60 * 60 * 1000); // run every hour
 
-/**
- * Save content as a file and return its public URL via ngrok.
- * @param {string} content     - File content (HTML, text, code, JSON, etc.)
- * @param {string} filename    - Desired filename (e.g. "lab_arrays.html")
- * @param {object} opts
- * @param {boolean} opts.allowDownload  - Also expose a ?download=1 endpoint
- * @returns {Promise<{url: string, downloadUrl: string|null, filename: string}>}
- */
+
 async function serveFile(content, filename, opts = {}) {
-    // Sanitize filename
     const safe = filename.replace(/[^a-zA-Z0-9_\-\.]/g, "_");
     const id   = crypto.randomBytes(4).toString("hex");
     const name = `${id}_${safe}`;
@@ -51,9 +36,7 @@ async function serveFile(content, filename, opts = {}) {
     return { url, downloadUrl, filename: name, localPath: filePath };
 }
 
-/**
- * Save a Buffer (binary — images, zips, etc.) and return its URL.
- */
+
 async function serveBuffer(buffer, filename) {
     const safe = filename.replace(/[^a-zA-Z0-9_\-\.]/g, "_");
     const id   = crypto.randomBytes(4).toString("hex");
@@ -67,35 +50,24 @@ async function serveBuffer(buffer, filename) {
     return { url, filename: name, localPath: filePath };
 }
 
-/**
- * Generate a lab HTML page and return its public URL.
- * @param {object} lab   - Lab object from geminiAgent.generateLab()
- * @param {string} groupName
- */
+
 async function serveLabPage(lab, groupName = "GiftAxis Lab") {
     const html = buildLabHTML(lab, groupName);
     return serveFile(html, `lab_${lab.title.replace(/\s+/g,"_").slice(0,30)}.html`);
 }
 
-/**
- * Generate an invoice HTML page.
- */
+
 async function serveInvoicePage(data) {
     const html = buildInvoiceHTML(data);
     return serveFile(html, `invoice_${data.invoiceNo}.html`, { allowDownload: true });
 }
 
-/**
- * Wrap source code in a nice HTML page with syntax highlight + download.
- */
+
 async function serveCodePage(code, language, title = "Code Output") {
     const html = buildCodeHTML(code, language, title);
     return serveFile(html, `code_${title.replace(/\s+/g,"_").slice(0,20)}.html`, { allowDownload: true });
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// HTML BUILDERS
-// ─────────────────────────────────────────────────────────────────────────────
 
 function buildLabHTML(lab, groupName) {
     const sections = [

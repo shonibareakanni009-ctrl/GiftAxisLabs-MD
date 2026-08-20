@@ -31,7 +31,6 @@ module.exports = {
       const stderr = (out?.stderr||"").trim();
       const output = stdout || stderr || "(no output)";
       const limited = output.length > 2000 ? output.slice(0,2000)+"\n...(truncated)" : output;
-      // Serve code + output as downloadable page
       try {
         const served = await fileServer.serveCodePage(code, lang, "Code Run — "+lang);
         reply("📎 *Download code:* " + served.url + config.footer);

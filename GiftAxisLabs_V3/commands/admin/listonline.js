@@ -11,8 +11,6 @@ module.exports = {
         try {
             const group = await sock.groupMetadata(from);
             const participants = group.participants;
-            // WhatsApp doesn't expose real-time online status via Baileys for all users,
-            // so we check presence/last seen from the store contacts
             const onlineMembers = [];
             const recentMembers = [];
             for (const p of participants) {

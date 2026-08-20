@@ -1,13 +1,9 @@
-/**
- * commands/learning/assignment.js
- * Assignment creation, submission, deadline tracking, and AI grading.
- */
+
 
 const gemini = require("../../lib/geminiAgent");
 const ldb    = require("../../lib/learningDB");
 const config = require("../../config");
 
-// Active deadline reminder timers
 const deadlineTimers = new Map();
 
 function scheduleReminders(sock, groupId, assignment) {
@@ -15,7 +11,6 @@ function scheduleReminders(sock, groupId, assignment) {
     const deadline = assignment.deadline;
     const key      = `${groupId}_${assignment.id}`;
 
-    // 1 hour before
     const oneHour = deadline - now - 3600000;
     if (oneHour > 0) {
         const t1 = setTimeout(async () => {
@@ -35,7 +30,6 @@ function scheduleReminders(sock, groupId, assignment) {
         deadlineTimers.set(`${key}_1h`, t1);
     }
 
-    // 10 minutes before
     const tenMin = deadline - now - 600000;
     if (tenMin > 0) {
         const t2 = setTimeout(async () => {
@@ -61,7 +55,6 @@ function scheduleReminders(sock, groupId, assignment) {
 
 module.exports = [
 
-    // ── .assign ───────────────────────────────────────────────────────────────
     {
         name:        "assign",
         aliases:     ["setassignment", "homework", "hw"],
@@ -88,10 +81,8 @@ module.exports = [
             const description = parts[1] || "See class notes.";
             const deadlineStr = parts[2] || "End of day";
 
-            // Parse deadline (simple approach: try Date.parse, else 24hrs from now)
             let deadlineMs = Date.parse(deadlineStr);
             if (isNaN(deadlineMs)) {
-                // Try common formats
                 const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
                 if (deadlineStr.toLowerCase().includes("tomorrow")) deadlineMs = tomorrow.getTime();
                 else if (deadlineStr.toLowerCase().includes("friday")) {
@@ -104,7 +95,6 @@ module.exports = [
                 title, description, deadline: deadlineMs, createdBy: sender
             });
 
-            // Schedule reminders
             scheduleReminders(sock, from, assignment);
 
             const dateStr = new Date(deadlineMs).toLocaleString("en-US", {
@@ -126,7 +116,6 @@ module.exports = [
         }
     },
 
-    // ── .submit_hw ────────────────────────────────────────────────────────────
     {
         name:        "submit_hw",
         aliases:     ["submithw", "submitwork", "turnin"],
@@ -171,7 +160,6 @@ module.exports = [
                 `├◆ 🤖 AI grading pending...\n└ ❏`
             );
 
-            // Auto-grade with Gemini in background
             try {
                 const result = await gemini.gradeTextAssignment(a.title, a.description, content);
                 ldb.gradeAssignment(from, assignId, sender, result.grade, result.feedback);
@@ -191,7 +179,6 @@ module.exports = [
         }
     },
 
-    // ── .assignments ──────────────────────────────────────────────────────────
     {
         name:        "assignments",
         aliases:     ["homeworklist", "hwlist", "tasks"],
@@ -224,7 +211,6 @@ module.exports = [
         }
     },
 
-    // ── .grades ───────────────────────────────────────────────────────────────
     {
         name:        "grades",
         aliases:     ["mygrades", "mymarks"],

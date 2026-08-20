@@ -1,25 +1,16 @@
-/**
- * ─────────────────────────────────────────────────────────────────────────────
- * GIFT AXIS LABS — Gemini AI Agent
- * The intelligent overseer for all Learning Groups.
- * Handles: moderation, lab generation, quiz generation,
- *          code evaluation, assignment grading, weekly reports.
- * ─────────────────────────────────────────────────────────────────────────────
- */
+
 
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const config = require("../config");
 
 const genAI = new GoogleGenerativeAI(config.geminiKey);
 
-// ─── HELPER ───────────────────────────────────────────────────────────────────
 async function ask(prompt, jsonMode = false) {
     try {
         const model = genAI.getGenerativeModel({ model: config.geminiModel || "gemini-2.0-flash" });
         const result = await model.generateContent(prompt);
         const text = result.response.text().trim();
         if (!jsonMode) return text;
-        // Strip markdown code fences if present
         const clean = text.replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/```\s*$/i, "").trim();
         return JSON.parse(clean);
     } catch (e) {
@@ -28,11 +19,7 @@ async function ask(prompt, jsonMode = false) {
     }
 }
 
-// ─── 1. MESSAGE MODERATION ────────────────────────────────────────────────────
-/**
- * Analyze a WhatsApp group message for rule violations.
- * Returns: { verdict: "ok"|"warn"|"mute_10"|"mute_60"|"kick", reason: string, isOffTopic: bool }
- */
+
 async function analyzeMessage(groupTopic, groupLanguage, sensitivity, userName, message, recentContext = []) {
     const contextStr = recentContext.slice(-5).map(m => `${m.user}: ${m.text}`).join("\n") || "none";
     const prompt = `
@@ -73,11 +60,7 @@ Be lenient with greetings, encouragement, and brief social messages.
     }
 }
 
-// ─── 2. GENERATE LAB (FCC-STYLE) ──────────────────────────────────────────────
-/**
- * Generate a complete FreeCodeCamp-style interactive coding lab.
- * Returns a structured lab object.
- */
+
 async function generateLab(topic, difficulty = "beginner", language = "JavaScript") {
     const prompt = `
 You are an expert programming instructor creating an interactive coding lab for WhatsApp.
@@ -116,11 +99,7 @@ For WhatsApp delivery, keep concept and explanations concise but complete.
     return await ask(prompt, true);
 }
 
-// ─── 3. EVALUATE CODE SUBMISSION ──────────────────────────────────────────────
-/**
- * Evaluate a student's code against the lab's test cases.
- * Returns { passed: bool, score: 0-100, feedback: string, corrections: string }
- */
+
 async function evaluateCode(lab, userCode) {
     const prompt = `
 You are a code evaluator for a WhatsApp programming learning group.
@@ -159,10 +138,7 @@ Be encouraging even for wrong answers. Award partial credit for correct logic wi
     }
 }
 
-// ─── 4. GENERATE QUIZ ─────────────────────────────────────────────────────────
-/**
- * Generate a multiple-choice quiz for a topic.
- */
+
 async function generateQuiz(topic, language = "JavaScript", numQuestions = 5, difficulty = "mixed") {
     const prompt = `
 Create a multiple-choice programming quiz for a WhatsApp group.
@@ -192,7 +168,6 @@ Vary difficulty across questions if mixed.
     return await ask(prompt, true);
 }
 
-// ─── 5. GRADE TEXT ASSIGNMENT ─────────────────────────────────────────────────
 async function gradeTextAssignment(assignmentTitle, description, submission) {
     const prompt = `
 You are grading a programming assignment for a WhatsApp learning group.
@@ -222,7 +197,6 @@ Respond ONLY with valid JSON:
     }
 }
 
-// ─── 6. GENERATE WEEKLY REPORT ────────────────────────────────────────────────
 async function generateWeeklyReport(groupName, topic, stats) {
     const prompt = `
 You are writing a weekly class report for a WhatsApp programming learning group.
@@ -247,7 +221,6 @@ Keep it WhatsApp-friendly (no markdown headers, use plain text, max 250 words).
     return await ask(prompt, false);
 }
 
-// ─── 7. GENERATE LAB CURRICULUM ───────────────────────────────────────────────
 async function generateCurriculum(topic, language, weeks = 4) {
     const prompt = `
 Create a ${weeks}-week programming curriculum for a WhatsApp learning group.
@@ -276,10 +249,9 @@ Respond ONLY with valid JSON:
     }
 }
 
-// ─── 8. ANSWER STUDENT QUESTION ───────────────────────────────────────────────
 async function answerQuestion(question, language, context = "") {
     const prompt = `
-You are a programming tutor in a WhatsApp group. 
+You are a programming tutor in a WhatsApp group.
 Language context: ${language}
 ${context ? `Recent context: ${context}` : ""}
 

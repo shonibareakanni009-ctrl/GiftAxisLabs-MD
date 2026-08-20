@@ -36,7 +36,6 @@ module.exports = {
 
         database.setSleep(true);
 
-        // Set presence to unavailable
         await sock.sendPresenceUpdate("unavailable");
 
         reply(

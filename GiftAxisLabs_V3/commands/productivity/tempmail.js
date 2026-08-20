@@ -25,7 +25,6 @@ module.exports = {
                 const d = res.data;
                 return reply(`📧 *Email*\n\n📨 From: ${d.from}\n📋 Subject: ${d.subject}\n\n${(d.textBody||d.htmlBody||"Empty").slice(0,1500)}` + config.footer);
             }
-            // Generate new
             const domains = ["1secmail.com","1secmail.net","1secmail.org"];
             const randomStr = Math.random().toString(36).slice(2,10);
             const domain = domains[Math.floor(Math.random()*domains.length)];

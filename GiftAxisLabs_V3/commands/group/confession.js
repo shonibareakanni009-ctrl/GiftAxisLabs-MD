@@ -19,7 +19,6 @@ module.exports = [
       const msg = args.join(" ");
       if (!msg) return reply("Usage: .confess <your anonymous message>\n\nThis will be posted anonymously in the confession group!");
       if (msg.length < 10) return reply("❌ Message too short. Be more expressive!");
-      // Find confession-enabled groups
       const gs = database.db.groupSettings || {};
       const groups = Object.entries(gs).filter(([,s])=>s.confessionEnabled).map(([g])=>g);
       if (!groups.length) return reply("❌ No confession group found. Ask your group admin to use .setconfession");

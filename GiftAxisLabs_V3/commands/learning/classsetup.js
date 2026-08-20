@@ -1,15 +1,10 @@
-/**
- * commands/learning/classsetup.js
- * Register and configure a WhatsApp group as a Learning Group.
- * Admin-only commands.
- */
+
 
 const ldb    = require("../../lib/learningDB");
 const config = require("../../config");
 
 module.exports = [
 
-    // ── .setclass ─────────────────────────────────────────────────────────────
     {
         name:        "setclass",
         aliases:     ["registerclass", "newclass"],
@@ -47,7 +42,6 @@ module.exports = [
 
             ldb.registerLearningGroup(from, groupName, sender, { topic, language });
 
-            // Auto-register the sender as teacher
             const senderName = m.pushName || sender.split("@")[0];
             ldb.registerStudent(from, sender, senderName, "teacher");
 
@@ -68,7 +62,6 @@ module.exports = [
         }
     },
 
-    // ── .classconfig ──────────────────────────────────────────────────────────
     {
         name:        "classconfig",
         aliases:     ["classset", "classsettings"],
@@ -119,7 +112,6 @@ module.exports = [
         }
     },
 
-    // ── .classinfo ────────────────────────────────────────────────────────────
     {
         name:        "classinfo",
         aliases:     ["groupinfo", "learninginfo"],
@@ -151,7 +143,6 @@ module.exports = [
         }
     },
 
-    // ── .setrole ──────────────────────────────────────────────────────────────
     {
         name:        "setrole",
         aliases:     ["assignrole"],
@@ -183,7 +174,6 @@ module.exports = [
         }
     },
 
-    // ── .leaderboard ──────────────────────────────────────────────────────────
     {
         name:        "leaderboard",
         aliases:     ["lb", "topstudents", "ranks"],

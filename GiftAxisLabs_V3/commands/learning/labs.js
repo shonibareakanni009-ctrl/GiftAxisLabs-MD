@@ -1,17 +1,10 @@
-/**
- * commands/learning/labs.js
- * FreeCodeCamp-style AI-generated interactive coding labs.
- * Students request a topic, Gemini generates a structured lab,
- * students submit code, Gemini evaluates and gives feedback.
- * Labs are also served as beautiful HTML pages via ngrok.
- */
+
 
 const gemini     = require("../../lib/geminiAgent");
 const ldb        = require("../../lib/learningDB");
 const config     = require("../../config");
 const fileServer = require("../../lib/fileServer");
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
 function formatLab(lab) {
     return (
         `┌ ❏ ◆ ⌜💻 𝗟𝗔𝗕: ${lab.title.toUpperCase()}⌟ ◆\n│\n` +
@@ -37,7 +30,6 @@ function formatLab(lab) {
 
 module.exports = [
 
-    // ── .lab ──────────────────────────────────────────────────────────────────
     {
         name:        "lab",
         aliases:     ["startlab", "newlab", "coding"],
@@ -65,7 +57,6 @@ module.exports = [
                 );
             }
 
-            // Parse difficulty from last arg if valid
             const difficulties = ["beginner", "intermediate", "advanced"];
             let difficulty = "beginner";
             let topicArgs  = [...args];
@@ -81,16 +72,13 @@ module.exports = [
                 const lab = await gemini.generateLab(topic, difficulty, g.language);
                 if (!lab || !lab.title) return reply("❌ Failed to generate lab. Try again.");
 
-                // Store lab for this user
                 ldb.setActiveLab(sender, lab);
                 ldb.registerStudent(from, sender, m.pushName || sender.split("@")[0]);
 
-                // Send WhatsApp text version
                 await sock.sendMessage(from, {
                     text: formatLab(lab) + config.footer
                 }, { quoted: m });
 
-                // Also serve as beautiful HTML page via ngrok
                 try {
                     const served = await fileServer.serveLabPage(lab, g.topic || "Coding Lab");
                     await sock.sendMessage(from, {
@@ -101,7 +89,7 @@ module.exports = [
                             `├◆ ✨ Has live code editor, hints, tests!\n` +
                             `├◆ ⏰ Link valid for 24 hours\n└ ❏` + config.footer
                     }, { quoted: m });
-                } catch(e) { /* ngrok not running — no problem, WhatsApp version was sent */ }
+                } catch(e) {  }
 
             } catch (e) {
                 await reply(`❌ Lab generation failed: ${e.message}`);
@@ -109,7 +97,6 @@ module.exports = [
         }
     },
 
-    // ── .submit ───────────────────────────────────────────────────────────────
     {
         name:        "submit",
         aliases:     ["submitcode", "mycode"],
@@ -143,7 +130,6 @@ module.exports = [
                 if (result.passed) {
                     ldb.completeLab(sender, from, activeLab.title, result.xpEarned || activeLab.xpReward);
 
-                    // Serve the solution code as a downloadable page
                     let codeUrl = "";
                     try {
                         const served = await fileServer.serveCodePage(code, activeLab.language || "javascript", `Solution — ${activeLab.title}`);
@@ -185,7 +171,6 @@ module.exports = [
         }
     },
 
-    // ── .labsolution ──────────────────────────────────────────────────────────
     {
         name:        "labsolution",
         aliases:     ["solution", "labans", "showsolution"],
@@ -197,7 +182,6 @@ module.exports = [
             const activeLab = ldb.getActiveLab(sender);
             if (!activeLab) return reply("❌ No active lab. Use .lab <topic> to start one.");
 
-            // Serve solution as downloadable code page
             let codeUrl = "";
             try {
                 const served = await fileServer.serveCodePage(
@@ -221,7 +205,6 @@ module.exports = [
         }
     },
 
-    // ── .curriculum ───────────────────────────────────────────────────────────
     {
         name:        "curriculum",
         aliases:     ["syllabus", "coursemap"],
@@ -258,7 +241,6 @@ module.exports = [
 
                 await sock.sendMessage(from, { text: text + config.footer }, { quoted: m });
 
-                // Serve full curriculum as a nice HTML page
                 try {
                     const currHtml = buildCurriculumHTML(curriculum, g);
                     const served = await fileServer.serveFile(currHtml, `curriculum_${g.language}_${weeks}wk.html`);
@@ -273,7 +255,6 @@ module.exports = [
         }
     },
 
-    // ── .labstats ─────────────────────────────────────────────────────────────
     {
         name:        "labstats",
         aliases:     ["mylabs", "labhistory"],
@@ -298,7 +279,6 @@ module.exports = [
         }
     },
 
-    // ── .ask ──────────────────────────────────────────────────────────────────
     {
         name:        "ask",
         aliases:     ["question", "tutor"],
@@ -327,7 +307,6 @@ module.exports = [
     },
 ];
 
-// ── Curriculum HTML builder ────────────────────────────────────────────────────
 function buildCurriculumHTML(curriculum, g) {
     const weeks = curriculum.weeks.map((w, i) => `
         <div class="week-card">
@@ -367,7 +346,6 @@ h1{font-size:clamp(1.4rem,4vw,2rem);background:linear-gradient(90deg,#58a6ff,#bc
 }
 
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
 function formatLab(lab) {
     return (
         `┌ ❏ ◆ ⌜💻 𝗟𝗔𝗕: ${lab.title.toUpperCase()}⌟ ◆\n│\n` +
@@ -393,7 +371,6 @@ function formatLab(lab) {
 
 module.exports = [
 
-    // ── .lab ──────────────────────────────────────────────────────────────────
     {
         name:        "lab",
         aliases:     ["startlab", "newlab", "coding"],
@@ -421,7 +398,6 @@ module.exports = [
                 );
             }
 
-            // Parse difficulty from last arg if valid
             const difficulties = ["beginner", "intermediate", "advanced"];
             let difficulty = "beginner";
             let topicArgs  = [...args];
@@ -437,7 +413,6 @@ module.exports = [
                 const lab = await gemini.generateLab(topic, difficulty, g.language);
                 if (!lab || !lab.title) return reply("❌ Failed to generate lab. Try again.");
 
-                // Store lab for this user
                 ldb.setActiveLab(sender, lab);
                 ldb.registerStudent(from, sender, m.pushName || sender.split("@")[0]);
 
@@ -451,7 +426,6 @@ module.exports = [
         }
     },
 
-    // ── .submit ───────────────────────────────────────────────────────────────
     {
         name:        "submit",
         aliases:     ["submitcode", "mycode"],
@@ -519,7 +493,6 @@ module.exports = [
         }
     },
 
-    // ── .labsolution ──────────────────────────────────────────────────────────
     {
         name:        "labsolution",
         aliases:     ["solution", "labans", "showsolution"],
@@ -542,7 +515,6 @@ module.exports = [
         }
     },
 
-    // ── .curriculum ───────────────────────────────────────────────────────────
     {
         name:        "curriculum",
         aliases:     ["syllabus", "coursemap"],
@@ -584,7 +556,6 @@ module.exports = [
         }
     },
 
-    // ── .labstats ─────────────────────────────────────────────────────────────
     {
         name:        "labstats",
         aliases:     ["mylabs", "labhistory"],
@@ -609,7 +580,6 @@ module.exports = [
         }
     },
 
-    // ── .ask ──────────────────────────────────────────────────────────────────
     {
         name:        "ask",
         aliases:     ["question", "tutor"],

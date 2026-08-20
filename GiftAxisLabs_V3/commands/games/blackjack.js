@@ -34,7 +34,6 @@ module.exports = {
             user.balance = Math.max(0,(user.balance||0)-g.bet); await saveDB(db);
             return reply("🃏 Your: " + disp(g.player) + " = " + pv + "\n\n💥 BUST! Lost $" + g.bet + "\n💳 $" + user.balance + config.footer);
           }
-          // Double down — dealer plays
           while(hVal(g.dealer)<17) g.dealer.push(g.deck.pop());
           const dv=hVal(g.dealer); bjGames.delete(key);
           const db=await getDB(); const user=getUser(db,sender);
@@ -45,7 +44,6 @@ module.exports = {
         }
         return reply("🃏 Your: " + disp(g.player) + " = " + hVal(g.player) + "\n🏠 Dealer: " + g.dealer[0].v+g.dealer[0].s + " + ??\n\n.blackjack hit | stand | double" + config.footer);
       }
-      // Stand
       while(hVal(g.dealer)<17) g.dealer.push(g.deck.pop());
       const pv=hVal(g.player); const dv=hVal(g.dealer); bjGames.delete(key);
       const db=await getDB(); const user=getUser(db,sender);

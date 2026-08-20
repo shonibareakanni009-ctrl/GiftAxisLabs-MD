@@ -9,7 +9,6 @@ module.exports = {
     desc: "Downloads replied media directly to the server PC.",
     ownerOnly: true,
     async execute(sock, m, args, reply) {
-        // Check if replying to a message with media
         const quoted = m.message?.extendedTextMessage?.contextInfo?.quotedMessage;
         if (!quoted) {
             return reply("📎 *Reply to media* (image/video/audio/document) with .save");
@@ -35,7 +34,6 @@ module.exports = {
                 return reply("❌ Failed to download media.");
             }
 
-            // Determine file extension
             let ext;
             switch (mediaType) {
                 case "imageMessage": ext = ".jpg"; break;
@@ -48,7 +46,6 @@ module.exports = {
                 default: ext = ".bin";
             }
 
-            // Save to downloads folder
             const saveDir = path.join(__dirname, "..", "..", "downloads");
             if (!fs.existsSync(saveDir)) {
                 fs.mkdirSync(saveDir, { recursive: true });

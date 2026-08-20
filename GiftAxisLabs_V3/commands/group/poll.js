@@ -35,7 +35,6 @@ module.exports = [
         if (!poll?.active) return reply("❌ No active poll. Use .poll to create one.");
         const choice = parseInt(args[0]) - 1;
         if (isNaN(choice) || choice < 0 || choice >= poll.options.length) return reply(`❌ Vote 1–${poll.options.length}`);
-        // Remove previous vote
         for (const [opt, voters] of Object.entries(poll.votes)) {
             poll.votes[opt] = voters.filter(v => v !== sender);
         }

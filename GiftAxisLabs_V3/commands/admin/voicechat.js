@@ -12,7 +12,6 @@ module.exports = {
 
         try {
             if (action === "open" || action === "start") {
-                // Send a call offer to trigger the voice chat banner
                 await sock.sendMessage(from, {
                     groupCallMessage: {
                         callKey: Buffer.alloc(32),

@@ -17,12 +17,6 @@ const fileServer    = require("./lib/fileServer");
 const os            = require("os");
 const fsExtra       = require("fs-extra");
 
-// ─────────────────────────────────────────────────────────────────────────────
-// MULTI-SERVER SUPPORT: Each bot instance gets its own index, port, session
-// Run with: node index.js 1   (for bot 1 on port 3000)
-//           node index.js 2   (for bot 2 on port 3001)
-//           Or use: node start-all.js  to launch all bots at once
-// ─────────────────────────────────────────────────────────────────────────────
 const BOT_INDEX = parseInt(process.env.BOT_INDEX || process.argv[2] || "1");
 const PORT = parseInt(process.env.PORT || (2999 + BOT_INDEX));
 const SESSION_DIR = path.join(__dirname, `session${BOT_INDEX}`);
@@ -34,9 +28,6 @@ if (!TG_TOKEN) {
     process.exit(1);
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// SAFE MEMORY STORE
-// ─────────────────────────────────────────────────────────────────────────────
 let store;
 try {
     const { makeInMemoryStore } = require("@whiskeysockets/baileys");
@@ -61,18 +52,9 @@ try {
     };
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// WHATSAPP SOCKET STATE
-// ─────────────────────────────────────────────────────────────────────────────
 let sock = null;
 
-// ─────────────────────────────────────────────────────────────────────────────
-// PAIRING LOGIC — Fixed: only requests code when socket is initialized
-// This is the key fix for the 405 error. requestPairingCode is called
-// only after makeWASocket is created and NOT after connection is already open.
-// ─────────────────────────────────────────────────────────────────────────────
 async function requestPairing(chatId, phoneNumber, source = "telegram") {
-    // Wait up to 15 seconds for sock to be ready
     let waited = 0;
     while (!sock && waited < 15000) {
         await new Promise(r => setTimeout(r, 500));
@@ -121,9 +103,6 @@ async function requestPairing(chatId, phoneNumber, source = "telegram") {
     }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// TELEGRAM BOT SETUP
-// ─────────────────────────────────────────────────────────────────────────────
 const MAX_SESSIONS = 100;
 const tgBot = new TelegramBot(TG_TOKEN, { polling: true });
 let tgPairingUsers = new Map();
@@ -141,7 +120,6 @@ const isTgAdmin = (chatId) => isOwner(chatId) || database.isAdmin(chatId);
 
 console.log(`📱 [Bot ${BOT_INDEX}] Telegram Bot started.`);
 
-// /start
 tgBot.onText(/\/start/, (msg) => {
     const chatId = msg.chat.id;
     const name = msg.from.first_name || "User";
@@ -172,7 +150,6 @@ tgBot.onText(/\/start/, (msg) => {
     );
 });
 
-// /id
 tgBot.onText(/\/id/, (msg) => {
     const chatId = msg.chat.id;
     const username = msg.from.username ? `@${msg.from.username}` : "ɴᴏ ᴜsᴇʀɴᴀᴍᴇ";
@@ -185,12 +162,10 @@ tgBot.onText(/\/id/, (msg) => {
     );
 });
 
-// /pair  — open to all users if config.openPairing = true
 tgBot.onText(/\/pair/, (msg) => {
     const chatId = msg.chat.id;
     const name   = msg.from.first_name || 'User';
 
-    // Access check: allow if openPairing, owner, added admin, or explicitly allowed
     const allowed = config.openPairing || isTgAdmin(chatId) || database.isTgUserAllowed(chatId);
     if (!allowed) {
         return tgBot.sendMessage(chatId,
@@ -206,7 +181,6 @@ tgBot.onText(/\/pair/, (msg) => {
         return tgBot.sendMessage(chatId, `┌ ❏ ◆ ⌜🔧 𝗠𝗔𝗜𝗡𝗧𝗘𝗡𝗔𝗡𝗖𝗘⌟ ◆\n│\n├◆ ʙᴏᴛ ᴜɴᴅᴇʀ ᴍᴀɪɴᴛᴇɴᴀɴᴄᴇ\n│\n└ ❏`);
     }
 
-    // Check session capacity
     const activeSessions = database.getActiveSessions();
     if (activeSessions.length >= MAX_SESSIONS) {
         return tgBot.sendMessage(chatId,
@@ -216,7 +190,6 @@ tgBot.onText(/\/pair/, (msg) => {
         );
     }
 
-    // Check if this user already has an active session
     const existingSession = database.db.sessions[`tg_${chatId}_bot${BOT_INDEX}`];
     if (existingSession && existingSession.active) {
         return tgBot.sendMessage(chatId,
@@ -238,7 +211,6 @@ tgBot.onText(/\/pair/, (msg) => {
     );
 });
 
-// /mystatus — user checks their own pairing status
 tgBot.onText(/\/mystatus/, (msg) => {
     const chatId = msg.chat.id;
     const session = database.db.sessions[`tg_${chatId}_bot${BOT_INDEX}`];
@@ -257,7 +229,6 @@ tgBot.onText(/\/mystatus/, (msg) => {
     }
 });
 
-// /myunpair — user removes their own session only
 tgBot.onText(/\/myunpair/, (msg) => {
     const chatId = msg.chat.id;
     const sessionKey = `tg_${chatId}_bot${BOT_INDEX}`;
@@ -275,7 +246,6 @@ tgBot.onText(/\/myunpair/, (msg) => {
 });
 
 
-// /unpair
 tgBot.onText(/\/unpair/, (msg) => {
     const chatId = msg.chat.id;
     if (fs.existsSync(SESSION_DIR)) {
@@ -295,7 +265,6 @@ tgBot.onText(/\/unpair/, (msg) => {
     }
 });
 
-// /ping
 tgBot.onText(/\/ping/, (msg) => {
     const start = Date.now();
     tgBot.sendMessage(msg.chat.id, "🏓 Pinging...").then(() => {
@@ -308,7 +277,6 @@ tgBot.onText(/\/ping/, (msg) => {
     });
 });
 
-// /runtime
 tgBot.onText(/\/runtime/, (msg) => {
     tgBot.sendMessage(msg.chat.id,
         `┌ ❏ ◆ ⌜𝗥𝗨𝗡𝗧𝗜𝗠𝗘⌟ ◆\n│\n` +
@@ -317,7 +285,6 @@ tgBot.onText(/\/runtime/, (msg) => {
     );
 });
 
-// /stats
 tgBot.onText(/\/stats/, (msg) => {
     const s = database.db.stats;
     const activeSessions = database.getActiveSessions();
@@ -332,7 +299,6 @@ tgBot.onText(/\/stats/, (msg) => {
     );
 });
 
-// /report [message]
 tgBot.onText(/\/report (.+)/, (msg, match) => {
     const chatId = msg.chat.id;
     const report = match[1];
@@ -359,7 +325,6 @@ tgBot.onText(/^\/report$/, (msg) => {
     tgBot.sendMessage(msg.chat.id, `┌ ❏ ◆ ⌜𝗥𝗘𝗣𝗢𝗥𝗧⌟ ◆\n│\n├◆ ᴜsᴀɢᴇ: /report [message]\n│\n└ ❏`);
 });
 
-// /reply [reportId] [message]
 tgBot.onText(/\/reply (\S+) (.+)/, (msg, match) => {
     const chatId = msg.chat.id;
     if (!isTgAdmin(chatId)) return tgBot.sendMessage(chatId, "❌ ᴀᴅᴍɪɴ ᴏɴʟʏ");
@@ -376,7 +341,6 @@ tgBot.onText(/\/reply (\S+) (.+)/, (msg, match) => {
     tgBot.sendMessage(chatId, `✅ Reply sent to ${report.fromName}`);
 });
 
-// /help
 tgBot.onText(/\/help/, (msg) => {
     tgBot.sendMessage(msg.chat.id,
         `┌ ❏ ◆ ⌜𝗛𝗘𝗟𝗣⌟ ◆\n│\n` +
@@ -390,7 +354,6 @@ tgBot.onText(/\/help/, (msg) => {
     );
 });
 
-// /tutorial
 tgBot.onText(/\/tutorial/, (msg) => {
     tgBot.sendMessage(msg.chat.id,
         `┌ ❏ ◆ ⌜𝗧𝗨𝗧𝗢𝗥𝗜𝗔𝗟⌟ ◆\n│\n` +
@@ -403,7 +366,6 @@ tgBot.onText(/\/tutorial/, (msg) => {
     );
 });
 
-// --- ADMIN COMMANDS ---
 tgBot.onText(/\/users/, (msg) => {
     const chatId = msg.chat.id;
     if (!isTgAdmin(chatId)) return tgBot.sendMessage(chatId, "❌ ᴀᴅᴍɪɴ ᴏɴʟʏ");
@@ -495,7 +457,6 @@ tgBot.onText(/\/clean/, (msg) => {
     tgBot.sendMessage(chatId, `✅ Removed ${before - after} old sessions. Active: ${after}`);
 });
 
-// --- OWNER COMMANDS ---
 tgBot.onText(/\/addadmin (.+)/, (msg, match) => {
     const chatId = msg.chat.id;
     if (!isOwner(chatId)) return tgBot.sendMessage(chatId, "❌ ᴏᴡɴᴇʀ ᴏɴʟʏ");
@@ -543,7 +504,6 @@ tgBot.onText(/\/restart/, (msg) => {
     tgBot.sendMessage(chatId, `🔄 Restarting Bot #${BOT_INDEX}...`).then(() => process.exit(0));
 });
 
-// Handle phone number input for pairing
 tgBot.on("message", async (msg) => {
     const chatId = msg.chat.id;
     const text = msg.text;
@@ -559,16 +519,12 @@ tgBot.on("message", async (msg) => {
     await requestPairing(chatId, phoneNumber, "telegram");
 });
 
-// ─────────────────────────────────────────────────────────────────────────────
-// WEB SERVER + API
-// ─────────────────────────────────────────────────────────────────────────────
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 app.use(express.static("public"));
 app.use(express.json());
 
-// POST /api/pair — Developer webhook to generate pairing code
 app.post("/api/pair", async (req, res) => {
     const apiKey = req.headers["x-api-key"] || req.body.apiKey;
     if (!apiKey || apiKey !== config.apiSecretKey) {
@@ -582,7 +538,6 @@ app.post("/api/pair", async (req, res) => {
     res.json(result);
 });
 
-// GET /api/status
 app.get("/api/status", (req, res) => {
     const apiKey = req.headers["x-api-key"] || req.query.apiKey;
     if (!apiKey || apiKey !== config.apiSecretKey) {
@@ -597,7 +552,6 @@ app.get("/api/status", (req, res) => {
     });
 });
 
-// ── Static: serve /generated with optional ?download=1 ────────────────────────
 app.use("/generated", (req, res, next) => {
     const filename = path.basename(req.path);
     const filePath = path.join(__dirname, "public/generated", filename);
@@ -608,18 +562,15 @@ app.use("/generated", (req, res, next) => {
     res.sendFile(filePath);
 });
 
-// ── Routes ────────────────────────────────────────────────────────────────────
 app.get("/", (req, res) => res.sendFile(path.join(__dirname, "public/index.html")));
 app.get("/dashboard", (req, res) => res.sendFile(path.join(__dirname, "public/dashboard.html")));
 app.get("/admin", (req, res) => res.sendFile(path.join(__dirname, "public/admin.html")));
 app.get("/pair", (req, res) => res.sendFile(path.join(__dirname, "public/index.html")));
 
-// ── Admin auth (simple token-based) ──────────────────────────────────────────
 const ADMIN_SESSIONS = new Map();
 function genToken() { return require("crypto").randomBytes(20).toString("hex"); }
 function verifyAdmin(token) { const s = ADMIN_SESSIONS.get(token); return s && (Date.now() - s.createdAt < 4 * 3600000); }
 
-// ── Message counter ───────────────────────────────────────────────────────────
 global.messageCount = global.messageCount || 0;
 const recentLogs = [];
 function pushLog(line) {
@@ -627,7 +578,6 @@ function pushLog(line) {
     if (recentLogs.length > 200) recentLogs.shift();
     io.emit("adminLog", line);
 }
-// Intercept console.log for live logs
 const _origLog = console.log.bind(console);
 console.log = (...args) => { const line = args.map(String).join(" "); _origLog(line); pushLog(line); };
 const _origWarn = console.warn.bind(console);
@@ -635,9 +585,7 @@ console.warn = (...args) => { const line = "WARN: "+args.map(String).join(" "); 
 const _origErr = console.error.bind(console);
 console.error = (...args) => { const line = "ERROR: "+args.map(String).join(" "); _origErr(line); pushLog(line); };
 
-// ── Socket.io ─────────────────────────────────────────────────────────────────
 io.on("connection", (socket) => {
-    // ── Public: pairing ──────────────────────────────────────────────────────
     socket.on("pair", async (phone) => {
         if (!phone) return socket.emit("log", "Please enter a phone number");
         const result = await requestPairing(null, phone.replace(/[^0-9]/g, ""), "web");
@@ -649,7 +597,6 @@ io.on("connection", (socket) => {
         }
     });
 
-    // ── Public dashboard data ────────────────────────────────────────────────
     socket.on("getDashboard", async () => {
         const ngUrl = ngrokManager.getUrl();
         const sessions = database.getActiveSessions ? database.getActiveSessions() : [];
@@ -669,7 +616,6 @@ io.on("connection", (socket) => {
     });
     socket.on("getLeaderboard", async () => socket.emit("leaderboard", await getLeaderboardData()));
 
-    // ── Admin login ──────────────────────────────────────────────────────────
     socket.on("adminLogin", ({ user, pass }) => {
         const validUser = user === (config.adminUser || "admin");
         const validPass = pass === (config.adminPassword || "giftaxis123");
@@ -679,7 +625,6 @@ io.on("connection", (socket) => {
         socket.emit("adminLoginResult", { success: true, token, user });
     });
 
-    // ── Admin dashboard ──────────────────────────────────────────────────────
     socket.on("getAdminDashboard", ({ token }) => {
         if (!verifyAdmin(token)) return socket.emit("adminLoginResult", { success: false, error: "Session expired" });
         const ngUrl = ngrokManager.getUrl();
@@ -747,7 +692,6 @@ io.on("connection", (socket) => {
         socket.emit("configData", { autoRead: config.autoRead, autoStatus: config.autoStatus, openPairing: config.openPairing, ngrokEnabled: config.ngrokEnabled !== false });
     });
 
-    // ── Admin actions ────────────────────────────────────────────────────────
     socket.on("adminAction", async ({ token, action, payload = {} }) => {
         if (!verifyAdmin(token)) return socket.emit("adminAction", { success: false, error: "Not authorized" });
         try {
@@ -826,7 +770,6 @@ io.on("connection", (socket) => {
     });
 });
 
-// ── Helper: get command list ──────────────────────────────────────────────────
 function getCommandList() {
     const result = [];
     const seen = new Set();
@@ -849,7 +792,6 @@ function getCommandList() {
     return result;
 }
 
-// ── Helper: economy leaderboard ───────────────────────────────────────────────
 async function getLeaderboardData() {
     try {
         const econPath = path.join(__dirname, "data/economy.json");
@@ -877,9 +819,6 @@ function getRecentActivity() {
 }
 function fmtBytes(b) { if(b<1024) return b+"B"; if(b<1048576) return (b/1024).toFixed(1)+"KB"; return (b/1048576).toFixed(1)+"MB"; }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// COMMANDS LOADER
-// ─────────────────────────────────────────────────────────────────────────────
 const commands = new Map();
 global.botStartTime = Date.now();
 
@@ -893,7 +832,6 @@ const loadCommands = (dir) => {
         } else if (file.endsWith(".js")) {
             try {
                 const cmdExport = require(fullPath);
-                // Support both single exports and array exports
                 const cmds = Array.isArray(cmdExport) ? cmdExport : [cmdExport];
                 for (const cmd of cmds) {
                     if (!cmd || !cmd.name) continue;
@@ -906,22 +844,17 @@ const loadCommands = (dir) => {
     }
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// WHATSAPP CONNECTION
-// ─────────────────────────────────────────────────────────────────────────────
 async function startGiftAxis() {
     if (!fs.existsSync(SESSION_DIR)) {
         fs.mkdirSync(SESSION_DIR, { recursive: true });
         console.log(`[Bot ${BOT_INDEX}] Session directory created: ${SESSION_DIR}`);
     }
 
-    // ── Restore session from SESSION_ID env var (for Render/Railway/Heroku) ──
     const SESSION_ID = process.env.SESSION_ID;
     if (SESSION_ID) {
         const credsPath = path.join(SESSION_DIR, "creds.json");
         if (!fs.existsSync(credsPath)) {
             try {
-                // SESSION_ID is base64-encoded creds.json content
                 const decoded = Buffer.from(SESSION_ID, "base64").toString("utf-8");
                 fs.writeFileSync(credsPath, decoded);
                 console.log(`✅ [Bot ${BOT_INDEX}] Session restored from SESSION_ID env var`);
@@ -951,7 +884,6 @@ async function startGiftAxis() {
 
     store.bind(sock.ev);
 
-    // --- CONNECTION HANDLER ---
     sock.ev.on("connection.update", async (update) => {
         const { connection, lastDisconnect, qr } = update;
 
@@ -971,7 +903,6 @@ async function startGiftAxis() {
             console.log(`[Bot ${BOT_INDEX}] ${reasonName}. Reconnecting in 5s...`);
             io.emit("log", `${reasonName}. Reconnecting...`);
             io.emit("status", "🔴 Offline");
-            // Don't null sock immediately — keep reference until new socket created
 
             if (reason === DisconnectReason.loggedOut) {
                 try {
@@ -990,7 +921,6 @@ async function startGiftAxis() {
 
     sock.ev.on("creds.update", saveCreds);
 
-    // --- ANTI-BOT: Remove bots added to group ---
     sock.ev.on("group-participants.update", async (update) => {
         try {
             if (update.action !== "add") return;
@@ -1012,7 +942,6 @@ async function startGiftAxis() {
         } catch (e) {}
     });
 
-    // --- AUTO STATUS VIEW ---
     if (config.autoStatus) {
         sock.ev.on("messages.upsert", async (chatUpdate) => {
             try {
@@ -1022,7 +951,6 @@ async function startGiftAxis() {
         });
     }
 
-    // --- REMINDER CHECKER ---
     setInterval(async () => {
         if (!sock) return;
         const due = database.getDueReminders();
@@ -1033,7 +961,6 @@ async function startGiftAxis() {
         }
     }, 10000);
 
-    // --- MESSAGE HANDLER ---
     sock.ev.on("messages.upsert", async (chatUpdate) => {
         try {
             const m = chatUpdate.messages[0];
@@ -1055,7 +982,6 @@ async function startGiftAxis() {
             if (database.db.botSleeping && !config.ownerNumber.includes(sender)) return;
             if (config.autoRead) await sock.readMessages([m.key]);
 
-            // --- GROUP PROTECTION ---
             if (from.endsWith("@g.us")) {
                 try {
                     const gs = database.getGroupSettings(from);
@@ -1066,13 +992,11 @@ async function startGiftAxis() {
                         isGroupAdmin = !!(sp?.admin) || config.ownerNumber.includes(sender);
                     } catch (_) {}
 
-                    // 1. MUTED MEMBER — delete their messages
                     if (!isGroupAdmin && database.isMemberMuted(from, sender)) {
                         try { await sock.sendMessage(from, { delete: m.key }); } catch (_) {}
                         return;
                     }
 
-                    // 2. ANTI-LINK
                     if (gs.antilink && !isGroupAdmin && body) {
                         const linkRegex = /(https?:\/\/|www\.|bit\.ly|t\.me|wa\.me|chat\.whatsapp\.com)/i;
                         if (linkRegex.test(body)) {
@@ -1085,7 +1009,6 @@ async function startGiftAxis() {
                         }
                     }
 
-                    // 3. ANTI-SPAM
                     if (gs.antispam && !isGroupAdmin) {
                         const spamCount = database.trackSpam(from, sender);
                         if (spamCount >= 5) {
@@ -1100,7 +1023,6 @@ async function startGiftAxis() {
                         }
                     }
 
-                    // 4. ANTI-WORD
                     if (gs.bannedWords && gs.bannedWords.length > 0 && !isGroupAdmin && body) {
                         const lowerBody = body.toLowerCase();
                         const foundWord = gs.bannedWords.find(w => lowerBody.includes(w));
@@ -1114,7 +1036,6 @@ async function startGiftAxis() {
                         }
                     }
 
-                    // 5. ANTI-TAG (5+ mentions)
                     if (gs.antitag && !isGroupAdmin) {
                         const mentions = m.message?.extendedTextMessage?.contextInfo?.mentionedJid || [];
                         if (mentions.length >= 5) {
@@ -1127,7 +1048,6 @@ async function startGiftAxis() {
                         }
                     }
 
-                    // 6. ANTI-VIEWONCE
                     if (gs.antiviewonce && (type === "viewOnceMessage" || type === "viewOnceMessageV2")) {
                         try {
                             const innerMsg = m.message?.viewOnceMessage?.message || m.message?.viewOnceMessageV2?.message;
@@ -1150,12 +1070,9 @@ async function startGiftAxis() {
                 }
             }
 
-            // Track global message count for dashboard
             global.messageCount = (global.messageCount || 0) + 1;
 
-            // ── AFK / SLOW MODE / AUTO-REPLY / ANTI-FLOOD / ANALYTICS ─────────────
             if (from.endsWith("@g.us") && body) {
-                // AFK auto-reply
                 try {
                     const afkMod = commands.get("afk");
                     if (afkMod?._afkUsers) {
@@ -1171,7 +1088,6 @@ async function startGiftAxis() {
                         }
                     }
                 } catch(e) {}
-                // Auto-reply keyword matching
                 try {
                     const gs2 = database.getGroupSettings ? database.getGroupSettings(from) : {};
                     if(gs2?.autoReplies && !body.startsWith(config.prefix)){
@@ -1179,7 +1095,6 @@ async function startGiftAxis() {
                         for(const [kw,resp] of Object.entries(gs2.autoReplies)){if(lbody.includes(kw)){await sock.sendMessage(from,{text:resp},{quoted:m});break;}}
                     }
                 } catch(e) {}
-                // Slow mode
                 try {
                     const gs3 = database.getGroupSettings ? database.getGroupSettings(from) : {};
                     if(gs3?.slowMode>0&&!isGroupAdmin){
@@ -1195,7 +1110,6 @@ async function startGiftAxis() {
                         lm.set(from+sender,Date.now());
                     }
                 } catch(e) {}
-                // Anti-flood
                 try {
                     const gs4 = database.getGroupSettings ? database.getGroupSettings(from) : {};
                     if(gs4?.antiFlood&&!isGroupAdmin){
@@ -1205,25 +1119,21 @@ async function startGiftAxis() {
                         else{const fc=mc.get(fkey);if(now2-fc.window>10000){fc.count=1;fc.window=now2;}else{fc.count++;const lim=gs4.antiFloodLimit||5;if(fc.count>lim){try{await sock.sendMessage(from,{delete:m.key});}catch(e){}await sock.sendMessage(from,{text:"🌊 @"+sender.split("@")[0]+" flooding! Muted 60s.",mentions:[sender]},{quoted:m});try{await sock.groupParticipantsUpdate(from,[sender],"demote");}catch(e){}setTimeout(async()=>{try{await sock.groupParticipantsUpdate(from,[sender],"promote");}catch(e){}},60000);fc.count=0;}}}
                     }
                 } catch(e) {}
-                // Group analytics
                 try {
                     const analyticsMod = commands.get("analytics");
                     if(analyticsMod?.trackMsg) analyticsMod.trackMsg(from,sender,m.pushName||sender.split("@")[0]);
                 } catch(e) {}
             }
 
-            // ── LEARNING GROUP AI AGENT ──────────────────────────────────────
             if (from.endsWith("@g.us") && learningDB.isLearningGroup(from) && body && !body.startsWith(config.prefix)) {
                 const lg      = learningDB.getLearningGroup(from);
                 const aiMode  = lg?.aiMode || "auto";
 
                 if (aiMode !== "off") {
                     try {
-                        // Auto-register sender as student
                         const sName = m.pushName || sender.split("@")[0];
                         learningDB.registerStudent(from, sender, sName);
 
-                        // Quiz answer handler — intercept A/B/C/D answers
                         const activeQuiz = learningDB.getActiveQuiz(from);
                         if (activeQuiz && /^[abcd]$/i.test(body.trim())) {
                             const qIndex   = activeQuiz.currentQ;
@@ -1247,7 +1157,6 @@ async function startGiftAxis() {
                             return; // handled
                         }
 
-                        // Attendance: intercept .present-like messages
                         if (/^(present|here|i'm here|am here)$/i.test(body.trim()) && lg.classOpen) {
                             const marked = learningDB.markPresent(from, sender, sName);
                             if (marked) {
@@ -1259,15 +1168,12 @@ async function startGiftAxis() {
                             return;
                         }
 
-                        // Check if student is muted
                         if (learningDB.isStudentMuted(from, sender)) {
                             try { await sock.sendMessage(from, { delete: m.key }); } catch (_) {}
                             return;
                         }
 
-                        // AI moderation — analyze message (throttle: 1 in 5 messages per user)
                         if (aiMode === "auto" || aiMode === "suggest") {
-                            // Simple throttle to save API calls
                             const throttleKey = `${from}_${sender}`;
                             if (!global._aiThrottle) global._aiThrottle = {};
                             const last = global._aiThrottle[throttleKey] || 0;
@@ -1284,13 +1190,10 @@ async function startGiftAxis() {
                             if (verdict.verdict === "ok") return;
 
                             if (aiMode === "suggest") {
-                                // Notify group admins via private message (if available)
-                                // For now: log only
                                 console.log(`[LearningGroup][SUGGEST] ${sName}: ${verdict.reason}`);
                                 return;
                             }
 
-                            // Auto-act mode
                             if (verdict.verdict === "warn" && verdict.confidence > 0.6) {
                                 const warns = learningDB.addWarning(from, sender, verdict.reason, "AI Agent");
                                 await sock.sendMessage(from, {
@@ -1329,7 +1232,6 @@ async function startGiftAxis() {
                     }
                 }
             }
-            // ── END LEARNING GROUP AI AGENT ──────────────────────────────────
 
             if (!body || !body.startsWith(config.prefix)) return;
 
@@ -1372,21 +1274,16 @@ async function startGiftAxis() {
     });
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// START
-// ─────────────────────────────────────────────────────────────────────────────
 loadCommands(path.join(__dirname, "commands"));
 console.log(`📦 [Bot ${BOT_INDEX}] Loaded ${commands.size} commands.`);
 
 server.listen(PORT, "0.0.0.0", async () => {
     console.log(`🌐 [Bot ${BOT_INDEX}] Dashboard running on port ${PORT}`);
 
-    // ── Start Ngrok tunnel ────────────────────────────────────────────────────
     if (config.ngrokEnabled !== false) {
         const publicUrl = await ngrokManager.startTunnel(PORT, config.ngrokAuthToken);
         if (publicUrl) {
             console.log(`🌍 [Bot ${BOT_INDEX}] Public URL: ${publicUrl}`);
-            // Notify Telegram owner if set
             if (config.telegramOwnerId) {
                 tgBot.sendMessage(config.telegramOwnerId,
                     `🌍 *Ngrok Tunnel Active*\n\`${publicUrl}\`\n\nDashboard: ${publicUrl}/dashboard`,

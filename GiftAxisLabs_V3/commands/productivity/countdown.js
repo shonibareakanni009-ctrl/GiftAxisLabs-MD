@@ -30,7 +30,6 @@ module.exports = {
       delete db[key]; await saveCD(db);
       return reply("✅ Countdown deleted." + config.footer);
     }
-    // Add new: .countdown 25/12/2025 Christmas
     const datePart = args[0];
     const eventName = args.slice(1).join(" ");
     if (!datePart || !eventName) return reply("Usage: .countdown <DD/MM/YYYY> <Event name>\nExample: .countdown 25/12/2025 Christmas\n\n.countdown list — see all your countdowns");

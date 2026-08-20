@@ -9,7 +9,6 @@ module.exports = {
     groupOnly: true,
     async execute(sock, m, args, reply) {
         const from = m.key.remoteJid;
-        // Get target: replied-to user or @mention
         let target = m.message?.extendedTextMessage?.contextInfo?.participant || null;
         if (!target && args[0]) {
             target = args[0].replace(/[^0-9]/g, "") + "@s.whatsapp.net";
@@ -23,7 +22,6 @@ module.exports = {
                 `├◆ .mutemember 2347012345678\n│\n└ ❏`
             );
         }
-        // Don't mute admins
         try {
             const groupMeta = await sock.groupMetadata(from);
             const targetParticipant = groupMeta.participants.find(p => p.id === target);

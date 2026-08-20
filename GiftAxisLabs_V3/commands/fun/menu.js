@@ -16,7 +16,6 @@ module.exports = {
         const usedMem = ((os.totalmem() - os.freemem()) / 1024 / 1024 / 1024).toFixed(1);
         const memPercent = (((os.totalmem() - os.freemem()) / os.totalmem()) * 100).toFixed(1);
 
-        // Count total commands
         const cmdDir = path.join(__dirname, "..");
         let totalCmds = 0;
         try {
@@ -26,11 +25,9 @@ module.exports = {
             });
         } catch(e) {}
 
-        // Get greeting based on time
         const hour = new Date().getHours();
         const greeting = hour < 12 ? "Good Morning" : hour < 17 ? "Good Afternoon" : "Good Evening";
 
-        // Get sender name
         const pushName = m.pushName || "User";
         const sender = m.key.participant || m.key.remoteJid;
 

@@ -1,16 +1,10 @@
-/**
- * commands/learning/attendance.js
- * Full attendance system: open class, mark present, close, view history.
- * Teachers/Prefects open class. Students type .present to register.
- * Consecutive absences trigger automatic warnings via Gemini agent.
- */
+
 
 const ldb    = require("../../lib/learningDB");
 const config = require("../../config");
 
 module.exports = [
 
-    // ── .startclass ───────────────────────────────────────────────────────────
     {
         name:        "startclass",
         aliases:     ["openclass", "beginclass"],
@@ -23,7 +17,6 @@ module.exports = [
             const sender = m.key.participant || m.key.remoteJid;
             if (!ldb.isLearningGroup(from)) return reply("❌ Not a Learning Group. Use .setclass first.");
 
-            // Check if teacher/prefect/admin
             const s = ldb.getStudent(from, sender);
             if (!s) ldb.registerStudent(from, sender, m.pushName || "Teacher", "teacher");
 
@@ -48,7 +41,6 @@ module.exports = [
         }
     },
 
-    // ── .present ──────────────────────────────────────────────────────────────
     {
         name:        "present",
         aliases:     ["here", "attendance", "signin"],
@@ -71,7 +63,6 @@ module.exports = [
                 return reply(`✅ @${name} — you're already marked present!`);
             }
 
-            // Count how many are present so far
             const history = ldb.getAttendanceHistory(from, 1);
             const session = history[0];
             const count   = session?.present?.length || 1;
@@ -83,7 +74,6 @@ module.exports = [
         }
     },
 
-    // ── .endclass ─────────────────────────────────────────────────────────────
     {
         name:        "endclass",
         aliases:     ["closeclass", "finishclass"],
@@ -98,7 +88,6 @@ module.exports = [
             const g = ldb.getLearningGroup(from);
             if (!g?.classOpen) return reply("⚠️ No class is currently open.");
 
-            // Get all group participants to determine absences
             let allParticipants = [];
             try {
                 const meta = await sock.groupMetadata(from);
@@ -117,7 +106,6 @@ module.exports = [
                 ? Math.round((session.closedAt - new Date(session.date).getTime()) / 60000)
                 : 0;
 
-            // Check for students with 3+ consecutive absences and warn them
             const allStudents = ldb.getAllStudents(from);
             const warningList = [];
             for (const [uid, s] of Object.entries(allStudents)) {
@@ -127,7 +115,6 @@ module.exports = [
                 if (recentAbsences >= 3) {
                     const warns = ldb.addWarning(from, uid, "3 consecutive absences", "System");
                     warningList.push(`⚠️ @${uid.split("@")[0]} (${warns} warn${warns > 1 ? "s" : ""})`);
-                    // Notify via message
                     await sock.sendMessage(from, {
                         text: `⚠️ *Attendance Warning* — @${uid.split("@")[0]}, you've missed 3 classes in a row. This is warn #${warns}. Please reach out to your teacher!` + config.footer,
                         mentions: [uid]
@@ -149,7 +136,6 @@ module.exports = [
         }
     },
 
-    // ── .attendance ───────────────────────────────────────────────────────────
     {
         name:        "attendancelog",
         aliases:     ["attlog", "classhistory"],
@@ -172,7 +158,6 @@ module.exports = [
         }
     },
 
-    // ── .mystats ──────────────────────────────────────────────────────────────
     {
         name:        "mystats",
         aliases:     ["myxp", "myprofile", "myclass"],
